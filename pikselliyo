@@ -1,647 +1,1158 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pikselliyo</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Pikselliyo</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: Arial, sans-serif;
+                background: #f0f0f0;
+                overflow: hidden;
+            }
+            #loginScreen {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            }
+            .loginBox {
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                text-align: center;
+                max-width: 350px;
+                width: 90%;
+            }
+            .loginBox h1 {
+                color: #333;
+                margin-bottom: 20px;
+                font-size: 2em;
+            }
+            .loginBox input {
+                width: 100%;
+                padding: 12px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                font-size: 14px;
+                margin-bottom: 15px;
+                outline: none;
+            }
+            .loginBox input:focus {
+                border-color: #666;
+            }
+            .loginBox button {
+                width: 100%;
+                padding: 12px;
+                background: #333;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            .loginBox button:hover {
+                background: #555;
+            }
+            #gameArea {
+                display: none;
+                width: 100vw;
+                height: 100vh;
+                position: relative;
+                background: #f5f5f5;
+            }
+            #canvasContainer {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                overflow: hidden;
+                cursor: grab;
+            }
+            #canvasContainer:active {
+                cursor: grabbing;
+            }
+            #pixelCanvas {
+                display: block;
+                margin: 50px auto;
+                background: white;
+                border: 2px solid #ddd;
+            }
+            #colorPalette {
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                background: white;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                padding: 10px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+            }
+            .paletteTitle {
+                font-weight: bold;
+                margin-bottom: 8px;
+                color: #333;
+                font-size: 12px;
+            }
+            .colorGrid {
+                display: grid;
+                grid-template-columns: repeat(8, 1fr);
+                gap: 3px;
+            }
+            .colorBox {
+                width: 25px;
+                height: 25px;
+                cursor: pointer;
+                border: 2px solid transparent;
+            }
+            .colorBox:hover {
+                border-color: #333;
+            }
+            .colorBox.selected {
+                border-color: #000;
+                border-width: 3px;
+            }
+            #chatContainer {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                width: 250px;
+                height: 200px;
+                background: white;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+            }
+            #chatHeader {
+                padding: 8px 12px;
+                background: #f0f0f0;
+                border-bottom: 1px solid #ddd;
+                font-weight: bold;
+                font-size: 12px;
+                color: #333;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            #chatMessages {
+                flex: 1;
+                padding: 8px;
+                overflow-y: auto;
+                font-size: 11px;
+                line-height: 1.3;
+            }
+            .chatMessage {
+                margin-bottom: 4px;
+                word-wrap: break-word;
+            }
+            .chatMessage .username {
+                font-weight: bold;
+                color: #666;
+            }
+            .chatMessage .message {
+                color: #333;
+            }
+            .chatMessage .coordinates {
+                color: #007bff;
+                font-weight: bold;
+                cursor: pointer;
+            }
+            .chatMessage .coordinates:hover {
+                text-decoration: underline;
+            }
+            #chatInput {
+                display: flex;
+                padding: 6px;
+                border-top: 1px solid #ddd;
+            }
+            #messageInput {
+                flex: 1;
+                padding: 4px 6px;
+                border: 1px solid #ddd;
+                border-radius: 3px;
+                outline: none;
+                font-size: 11px;
+                margin-right: 5px;
+            }
+            #sendButton {
+                padding: 4px 8px;
+                background: #333;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 11px;
+                margin-right: 3px;
+            }
+            #sendButton:hover {
+                background: #555;
+            }
+            #sendButton[disabled] {
+                background: #ccc;
+                cursor: not-allowed;
+            }
+            #coordsButton {
+                padding: 4px 8px;
+                background: #007bff;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 11px;
+            }
+            #coordsButton:hover {
+                background: #0056b3;
+            }
+            #timer {
+                position: fixed;
+                bottom: 230px;
+                left: 20px;
+                background: white;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 12px;
+                font-weight: bold;
+                color: #333;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+            }
+            #topHeader {
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: white;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                padding: 10px 20px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+            }
+            #topluyo-logo {
+                height: 30px;
+                width: auto;
+            }
+            #topluyo-text {
+                font-size: 18px;
+                font-weight: bold;
+                color: #333;
+            }
+            #onlineUsers {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                background: white;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 12px;
+                font-weight: bold;
+                color: #333;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+            }
+            #roomInfo {
+                position: fixed;
+                top: 20px;
+                left: 150px;
+                background: white;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 12px;
+                font-weight: bold;
+                color: #333;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+            }
 
-        body {
-            font-family: Arial, sans-serif;
-            background: white;
-            overflow: hidden;
-        }
-
-        #loginScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .loginBox {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            max-width: 350px;
-            width: 90%;
-        }
-
-        .loginBox h1 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 2em;
-        }
-
-        .loginBox input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            margin-bottom: 15px;
-            outline: none;
-        }
-
-        .loginBox input:focus {
-            border-color: #666;
-        }
-
-        .loginBox button {
-            width: 100%;
-            padding: 12px;
-            background: #333;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .loginBox button:hover {
-            background: #555;
-        }
-
-        #gameArea {
-            display: none;
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-            background: white;
-        }
-
-        #canvasContainer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            overflow: auto;
-            background: #f5f5f5;
-        }
-
-        #pixelCanvas {
-            display: block;
-            margin: 50px auto;
-            background: white;
-            border: 2px solid #ddd;
-            cursor: crosshair;
-        }
-
-        #colorPalette {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: white;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            padding: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .paletteTitle {
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #333;
-            font-size: 12px;
-        }
-
-        .colorGrid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            gap: 3px;
-        }
-
-        .colorBox {
-            width: 25px;
-            height: 25px;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-
-        .colorBox:hover {
-            border-color: #333;
-        }
-
-        .colorBox.selected {
-            border-color: #000;
-            border-width: 3px;
-        }
-
-        #chatContainer {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 250px;
-            height: 200px;
-            background: white;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        #chatHeader {
-            padding: 8px 12px;
-            background: #f0f0f0;
-            border-bottom: 1px solid #ddd;
-            font-weight: bold;
-            font-size: 12px;
-            color: #333;
-        }
-
-        #chatMessages {
-            flex: 1;
-            padding: 8px;
-            overflow-y: auto;
-            font-size: 11px;
-            line-height: 1.3;
-        }
-
-        .chatMessage {
-            margin-bottom: 4px;
-            word-wrap: break-word;
-        }
-
-        .chatMessage .username {
-            font-weight: bold;
-            color: #666;
-        }
-
-        .chatMessage .message {
-            color: #333;
-        }
-
-        #chatInput {
-            display: flex;
-            padding: 6px;
-            border-top: 1px solid #ddd;
-        }
-
-        #messageInput {
-            flex: 1;
-            padding: 4px 6px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            outline: none;
-            font-size: 11px;
-            margin-right: 5px;
-        }
-
-        #sendButton {
-            padding: 4px 8px;
-            background: #333;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 11px;
-        }
-
-        #sendButton:hover {
-            background: #555;
-        }
-
-        #timer {
-            position: fixed;
-            bottom: 230px;
-            left: 20px;
-            background: white;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 12px;
-            font-weight: bold;
-            color: #333;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        #onlineUsers {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: white;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 12px;
-            font-weight: bold;
-            color: #333;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #333;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 5px;
-            font-size: 12px;
-            z-index: 1001;
-        }
-
-        .pixel-square {
-            stroke: #e0e0e0;
-            stroke-width: 0.5;
-            fill: white;
-        }
-
-        .pixel-square:hover {
-            stroke: #999;
-            stroke-width: 1;
-        }
-    </style>
-</head>
-<body>
-    <div id="loginScreen">
-        <div class="loginBox">
-            <h1>Pikselliyo</h1>
-            <p style="margin-bottom: 20px; color: #666;">Çok oyunculu piksel sanatı oyunu</p>
-            <input type="text" id="usernameInput" placeholder="Kullanıcı adınızı girin..." maxlength="15">
-            <button onclick="joinGame()">Oyuna Katıl</button>
-        </div>
-    </div>
-
-    <div id="gameArea">
-        <div id="onlineUsers">Çevrimiçi: <span id="userCount">0</span></div>
-        
-        <div id="canvasContainer">
-            <svg id="pixelCanvas" width="2000" height="2000"></svg>
-        </div>
-
-        <div id="colorPalette">
-            <div class="paletteTitle">Renkler</div>
-            <div class="colorGrid" id="colorGrid"></div>
-        </div>
-
-        <div id="timer">Sonraki: <span id="timeLeft">0</span>s</div>
-
-        <div id="chatContainer">
-            <div id="chatHeader">Chat</div>
-            <div id="chatMessages" id="messages"></div>
-            <div id="chatInput">
-                <input type="text" id="messageInput" placeholder="Mesaj..." maxlength="100">
-                <button id="sendButton" onclick="sendMessage()">Gönder</button>
+            #controls {
+                position: fixed;
+                bottom: 280px;
+                left: 20px;
+                background: white;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 11px;
+                color: #666;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+            }
+            .notification {
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: white;
+                padding: 10px 15px;
+                border-radius: 5px;
+                font-size: 12px;
+                z-index: 1001;
+            }
+            .pixel-square {
+                stroke: #e0e0e0;
+                stroke-width: 0.5;
+                fill: white;
+                cursor: crosshair;
+            }
+            .pixel-square:hover {
+                stroke: #999;
+                stroke-width: 1;
+            }
+            #coordsDisplay {
+                position: fixed;
+                bottom: 230px;
+                left: 120px;
+                background: white;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 12px;
+                font-weight: bold;
+                color: #333;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+            }
+            #miniMap {
+                position: fixed;
+                top: 80px;
+                left: 20px;
+                width: 100px;
+                height: 100px;
+                background: white;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+                cursor: pointer;
+            }
+            #miniMapCanvas {
+                width: 96px;
+                height: 96px;
+                border-radius: 6px;
+                margin: 2px;
+            }
+            /* Ban Ekranı CSS */
+            #banScreen {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 2000;
+            }
+            .banBox {
+                background: white;
+                padding: 40px;
+                border-radius: 12px;
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+                text-align: center;
+                max-width: 450px;
+                width: 90%;
+            }
+            .banBox h1 {
+                color: #d32f2f; /* Kırmızı başlık */
+                margin-bottom: 25px;
+                font-size: 2.5em;
+            }
+            .banBox p {
+                color: #555;
+                font-size: 1.1em;
+                line-height: 1.6;
+                margin-bottom: 30px;
+            }
+            .banBox button {
+                width: 100%;
+                padding: 15px;
+                background: #d32f2f;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 1.1em;
+                cursor: pointer;
+                transition: background 0.3s ease;
+            }
+            .banBox button:hover {
+                background: #e57373; /* Daha açık kırmızı */
+            }
+        </style>
+    </head>
+    <body>
+        <div id="loginScreen">
+            <div class="loginBox">
+                <h1>Pikselliyo</h1>
+                <p style="margin-bottom: 20px; color: #666">
+                    Herkese açık piksel sanatı odası
+                </p>
+                <input
+                    type="text"
+                    id="usernameInput"
+                    placeholder="Kullanıcı adınızı girin..."
+                    maxlength="15"
+                />
+                <button onclick="startGame()">Oyuna Başla</button>
             </div>
         </div>
-    </div>
 
-    <!-- Socket.io for real multiplayer -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+        <!-- Ban Ekranı -->
+        <div id="banScreen" style="display: none;">
+            <div class="banBox">
+                <h1>Oyundan Atıldınız!</h1>
+                <p id="banReason">
+                    Hesabınız kuralları ihlal ettiği için geçici olarak
+                    engellenmiştir. Lütfen destek ekibimizle iletişime
+                    geçin.
+                </p>
+                <button onclick="window.location.reload()">Sayfayı Yenile</button>
+            </div>
+        </div>
 
-    <script>
-        // WebSocket bağlantısı (gerçek sunucu yoksa LocalStorage kullan)
-        let socket = null;
-        let isRealMultiplayer = false;
-        
-        // Oyun değişkenleri
-        let selectedColor = '#FF0000';
-        let canPlacePixel = true;
-        let username = '';
-        let lastPixelTime = 0;
-        let pixelSize = 10;
-        let gridWidth = 200;
-        let gridHeight = 200;
+        <div id="gameArea">
+            <div id="topHeader">
+                <img src="https://cdn.topluyo.com/kanka/kanka-color-border.svg" alt="Topluyo" id="topluyo-logo">
+                <span id="topluyo-text">Topluyo Pikselliyo</span>
+            </div>
 
-        // Renk paleti
-        const colors = [
-            '#FFFFFF', '#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
-            '#800000', '#008000', '#000080', '#808000', '#800080', '#008080', '#C0C0C0', '#808080',
-            '#FF8000', '#8000FF', '#FF0080', '#80FF00', '#0080FF', '#FF8080', '#80FF80', '#8080FF'
-        ];
+            <div id="onlineUsers">Çevrimiçi: <span id="userCount">0</span></div>
+            <div id="roomInfo">
+                Oda Kodu: <span id="roomCodeDisplay">Global</span>
+            </div>
 
-        // Oyun verisi (gerçek sunucu olmadığında localStorage kullan)
-        let gameData = {
-            pixels: {},
-            users: new Set(),
-            messages: []
-        };
+            <div id="miniMap">
+                <canvas id="miniMapCanvas" width="96" height="96"></canvas>
+            </div>
 
-        window.onload = function() {
-            setupColorPalette();
-            document.getElementById('usernameInput').focus();
-            
-            // Enter tuşları
-            document.getElementById('usernameInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') joinGame();
-            });
-            
-            document.getElementById('messageInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') sendMessage();
-            });
+            <div id="canvasContainer">
+                <svg id="pixelCanvas" width="2000" height="2000"></svg>
+            </div>
 
-            // Gerçek WebSocket bağlantısını dene
-            tryConnectWebSocket();
-        };
+            <div id="colorPalette">
+                <div class="paletteTitle">Renkler</div>
+                <div class="colorGrid" id="colorGrid"></div>
+            </div>
 
-        function tryConnectWebSocket() {
-            try {
-                // Gerçek sunucu varsa bağlan (bu örnekte localhost:3000)
-                socket = io('ws://localhost:3000');
-                
-                socket.on('connect', () => {
-                    isRealMultiplayer = true;
-                    console.log('Gerçek sunucuya bağlandı');
+            <div id="timer">Sonraki: <span id="timeLeft">0</span>s</div>
+            <div id="coordsDisplay">
+                Koordinat: <span id="currentCoords"></span>
+            </div>
+            <div id="controls">
+                Hareket: ↑↓←→ veya WASD<br />
+                Yerleştir: Tıklama
+            </div>
+
+            <div id="chatContainer">
+                <div id="chatHeader">
+                    <span>Chat</span>
+                </div>
+                <div id="chatMessages"></div>
+                <div id="chatInput">
+                    <input
+                        type="text"
+                        id="messageInput"
+                        placeholder="Mesaj..."
+                        maxlength="100"
+                    />
+                    <button id="sendButton" onclick="sendMessage()">
+                        Gönder
+                    </button>
+                    <button id="coordsButton" onclick="sendCoords()">📍</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            let socket;
+            let selectedColor = "#FF0000";
+            let canPlacePixel = true;
+            let canSendMessage = true;
+            let username = "";
+            const roomCode = "global";
+            let lastPixelTime = 0;
+            let lastMessageTime = 0;
+            let isAdmin = false;
+            let pixelSize = 10;
+            let gridWidth = 200;
+            let gridHeight = 200;
+            let currentMouseX = 0;
+            let currentMouseY = 0;
+
+            const colors = [
+                "#FFFFFF",
+                "#000000",
+                "#FF0000",
+                "#00FF00",
+                "#0000FF",
+                "#FFFF00",
+                "#FF00FF",
+                "#00FFFF",
+                "#800000",
+                "#008000",
+                "#000080",
+                "#808000",
+                "#800080",
+                "#008080",
+                "#C0C0C0",
+                "#808080",
+                "#FF8000",
+                "#8000FF",
+                "#FF0080",
+                "#80FF00",
+                "#0080FF",
+                "#FF8080",
+                "#80FF80",
+                "#8080FF",
+                "#FFB6C1",
+                "#F0E68C",
+                "#E6E6FA",
+                "#98FB98",
+                "#87CEEB",
+                "#DDA0DD",
+                "#F5DEB3",
+                "#FA8072",
+            ];
+
+            let gameData = {
+                pixels: {},
+                users: new Set(),
+                messages: [],
+            };
+
+            const canvasContainer = document.getElementById("canvasContainer");
+            const pixelCanvas = document.getElementById("pixelCanvas");
+            let isDragging = false;
+            let lastX, lastY;
+            let currentCanvasX = 0;
+            let currentCanvasY = 0;
+            const moveSpeed = 50;
+
+            window.onload = function () {
+                setupColorPalette();
+                document.getElementById("usernameInput").focus();
+
+                document
+                    .getElementById("usernameInput")
+                    .addEventListener("keypress", function (e) {
+                        if (e.key === "Enter") startGame();
+                    });
+
+                document
+                    .getElementById("messageInput")
+                    .addEventListener("keypress", function (e) {
+                        if (e.key === "Enter") sendMessage();
+                    });
+
+                setupMouseDrag();
+                setupKeyboardControls();
+            };
+
+            function setupKeyboardControls() {
+                document.addEventListener("keydown", function (e) {
+                    if (document.activeElement.tagName === "INPUT") return;
+
+                    let moved = false;
+                    switch (e.key.toLowerCase()) {
+                        case "w":
+                        case "arrowup":
+                            currentCanvasY += moveSpeed;
+                            moved = true;
+                            break;
+                        case "s":
+                        case "arrowdown":
+                            currentCanvasY -= moveSpeed;
+                            moved = true;
+                            break;
+                        case "a":
+                        case "arrowleft":
+                            currentCanvasX += moveSpeed;
+                            moved = true;
+                            break;
+                        case "d":
+                        case "arrowright":
+                            currentCanvasX -= moveSpeed;
+                            moved = true;
+                            break;
+                    }
+
+                    if (moved) {
+                        e.preventDefault();
+                        constrainCanvas();
+                        pixelCanvas.style.transform = `translate(${currentCanvasX}px, ${currentCanvasY}px)`;
+                        updateMiniMap();
+                    }
                 });
-
-                socket.on('disconnect', () => {
-                    isRealMultiplayer = false;
-                    console.log('Sunucu bağlantısı kesildi');
-                });
-
-                socket.on('pixel-placed', (data) => {
-                    drawPixel(data.x, data.y, data.color);
-                });
-
-                socket.on('user-joined', (data) => {
-                    gameData.users.add(data.username);
-                    addChatMessage('Sistem', `${data.username} katıldı`);
-                    updateOnlineCount();
-                });
-
-                socket.on('user-left', (data) => {
-                    gameData.users.delete(data.username);
-                    addChatMessage('Sistem', `${data.username} ayrıldı`);
-                    updateOnlineCount();
-                });
-
-                socket.on('chat-message', (data) => {
-                    addChatMessage(data.username, data.message);
-                });
-
-                socket.on('game-state', (data) => {
-                    gameData = data;
-                    redrawCanvas();
-                    updateOnlineCount();
-                });
-
-            } catch (error) {
-                console.log('WebSocket bağlantısı başarısız, localStorage kullanılıyor');
-                isRealMultiplayer = false;
-                loadFromLocalStorage();
             }
 
-            // Bağlantı 2 saniye içinde olmazsa localStorage kullan
-            setTimeout(() => {
-                if (!isRealMultiplayer) {
-                    console.log('Sunucu bulunamadı, localStorage kullanılıyor');
-                    loadFromLocalStorage();
-                }
-            }, 2000);
-        }
-
-        function loadFromLocalStorage() {
-            const saved = localStorage.getItem('pikselliyo-game');
-            if (saved) {
-                const data = JSON.parse(saved);
-                gameData.pixels = data.pixels || {};
-                gameData.messages = data.messages || [];
+            function constrainCanvas() {
+                const maxX = gridWidth * pixelSize - window.innerWidth;
+                const maxY = gridHeight * pixelSize - window.innerHeight;
+                currentCanvasX = Math.min(0, Math.max(-maxX, currentCanvasX));
+                currentCanvasY = Math.min(0, Math.max(-maxY, currentCanvasY));
             }
-        }
 
-        function saveToLocalStorage() {
-            if (!isRealMultiplayer) {
-                localStorage.setItem('pikselliyo-game', JSON.stringify({
-                    pixels: gameData.pixels,
-                    messages: gameData.messages.slice(-50) // Son 50 mesajı sakla
-                }));
-            }
-        }
+            function connectWebSocket() {
+                try {
+                    socket = io();
 
-        function setupColorPalette() {
-            const colorGrid = document.getElementById('colorGrid');
-            colors.forEach((color, index) => {
-                const colorBox = document.createElement('div');
-                colorBox.className = 'colorBox';
-                colorBox.style.backgroundColor = color;
-                if (index === 2) colorBox.classList.add('selected'); // Kırmızı seçili başlasın
-                
-                colorBox.onclick = () => selectColor(color, colorBox);
-                colorGrid.appendChild(colorBox);
-            });
-        }
+                    socket.on("connect", () => {
+                        console.log("Sunucuya bağlandı:", socket.id);
+                        socket.emit("join-room", { username, roomCode });
+                    });
 
-        function selectColor(color, element) {
-            selectedColor = color;
-            document.querySelectorAll('.colorBox').forEach(box => box.classList.remove('selected'));
-            element.classList.add('selected');
-        }
+                    socket.on("roomJoined", (data) => {
+                        showGameArea();
+                    });
 
-        function joinGame() {
-            const input = document.getElementById('usernameInput').value.trim();
-            if (input.length < 2) {
-                alert('Kullanıcı adı en az 2 karakter olmalıdır!');
-                return;
-            }
-            
-            username = input;
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            
-            initializeGame();
-            
-            if (isRealMultiplayer && socket) {
-                socket.emit('join-game', { username: username });
-            } else {
-                // LocalStorage için
-                gameData.users.add(username);
-                addChatMessage('Sistem', `${username} katıldı`);
-                updateOnlineCount();
-                
-                // Sahte kullanıcılar ekle (demo için)
-                setTimeout(() => {
-                    ['Ali', 'Ayşe', 'Mehmet', 'Zeynep'].forEach(name => {
-                        if (Math.random() < 0.7) {
-                            gameData.users.add(name);
+                    socket.on("roomState", (data) => {
+                        gameData.users = new Set(data.users);
+                        gameData.pixels = data.pixels;
+                        isAdmin = data.isAdmin || false;
+                        redrawCanvas();
+                        updateOnlineCount();
+                        updateMiniMap();
+                        updateAdminUI();
+                        if (data.message) {
+                            addChatMessage("Sistem", data.message);
                         }
                     });
-                    updateOnlineCount();
-                }, 1000);
-            }
-        }
 
-        function initializeGame() {
-            const canvas = document.getElementById('pixelCanvas');
-            
-            // Grid oluştur
-            createPixelGrid();
-            
-            // Canvas tıklama olayı
-            canvas.addEventListener('click', handleCanvasClick);
-            
-            // Zamanlayıcıyı başlat
-            startTimer();
-            
-            // Var olan pikselleri çiz
-            redrawCanvas();
-            
-            // Chat geçmişini yükle
-            gameData.messages.forEach(msg => {
-                addChatMessage(msg.username, msg.message);
-            });
-        }
+                    socket.on("pixel-placed", (data) => {
+                        drawPixel(data.x, data.y, data.color);
+                        updateMiniMap();
+                    });
 
-        function createPixelGrid() {
-            const canvas = document.getElementById('pixelCanvas');
-            canvas.innerHTML = ''; // Temizle
-            
-            for (let y = 0; y < gridHeight; y++) {
-                for (let x = 0; x < gridWidth; x++) {
-                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                    rect.setAttribute('x', x * pixelSize);
-                    rect.setAttribute('y', y * pixelSize);
-                    rect.setAttribute('width', pixelSize);
-                    rect.setAttribute('height', pixelSize);
-                    rect.setAttribute('class', 'pixel-square');
-                    rect.setAttribute('data-x', x);
-                    rect.setAttribute('data-y', y);
-                    
-                    canvas.appendChild(rect);
+                    socket.on("chat-message", (data) => {
+                        addChatMessage(data.username, data.message);
+                    });
+
+                    socket.on("clear-canvas", () => {
+                        gameData.pixels = {};
+                        redrawCanvas();
+                        updateMiniMap();
+                    });
+
+                    socket.on("user-joined", (data) => {
+                        gameData.users.add(data.username);
+                        addChatMessage("Sistem", `${data.username} katıldı.`);
+                        updateOnlineCount();
+                    });
+
+                    socket.on("user-left", (data) => {
+                        gameData.users.delete(data.username);
+                        addChatMessage("Sistem", `${data.username} ayrıldı.`);
+                        updateOnlineCount();
+                    });
+
+                    socket.on("admin-status", (data) => {
+                        isAdmin = data.isAdmin;
+                        updateAdminUI();
+                        console.log("Admin durum değişti:", isAdmin);
+                    });
+
+                    socket.on("error", (data) => {
+                        showNotification(data.message);
+                    });
+
+                    socket.on("disconnect", () => {
+                        console.log("Bağlantı kesildi.");
+                        showNotification(
+                            "Bağlantı kesildi. Lütfen sayfayı yenileyin.",
+                        );
+                    });
+
+                    // Ban dinleyici
+                    socket.on("banned", (data) => {
+                        showBanScreen(data.message, data.admin, data.bannedAt);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 3000);
+                    });
+
+                } catch (error) {
+                    console.error(
+                        "WebSocket bağlantısı başarısız oldu.",
+                        error,
+                    );
+                    alert(
+                        "Sunucuya bağlanılamadı. Lütfen sunucunun çalıştığından emin olun.",
+                    );
                 }
             }
-        }
 
-        function handleCanvasClick(event) {
-            if (!canPlacePixel) {
-                showNotification('Henüz piksel koyamazsınız!');
-                return;
+            function startGame() {
+                const inputUsername = document
+                    .getElementById("usernameInput")
+                    .value.trim();
+
+                if (inputUsername.length < 2) {
+                    alert("Kullanıcı adı en az 2 karakter olmalıdır!");
+                    return;
+                }
+
+                username = inputUsername;
+                connectWebSocket();
             }
-            
-            const rect = event.target;
-            if (!rect.hasAttribute('data-x')) return;
-            
-            const x = parseInt(rect.getAttribute('data-x'));
-            const y = parseInt(rect.getAttribute('data-y'));
-            
-            placePixel(x, y);
-        }
 
-        function placePixel(x, y) {
-            const pixelKey = `${x},${y}`;
-            gameData.pixels[pixelKey] = selectedColor;
-            
-            drawPixel(x, y, selectedColor);
-            
-            canPlacePixel = false;
-            lastPixelTime = Date.now();
-            
-            if (isRealMultiplayer && socket) {
-                socket.emit('place-pixel', { x, y, color: selectedColor, username });
-            } else {
-                saveToLocalStorage();
-                addChatMessage(username, `(${x}, ${y}) pikseli yerleştirdi`);
+            function showGameArea() {
+                document.getElementById("loginScreen").style.display = "none";
+                document.getElementById("gameArea").style.display = "block";
+                initializeGame();
             }
-            
-            showNotification('Piksel yerleştirildi!');
-        }
 
-        function drawPixel(x, y, color) {
-            const rect = document.querySelector(`[data-x="${x}"][data-y="${y}"]`);
-            if (rect) {
-                rect.style.fill = color;
+            function setupColorPalette() {
+                const colorGrid = document.getElementById("colorGrid");
+                colors.forEach((color, index) => {
+                    const colorBox = document.createElement("div");
+                    colorBox.className = "colorBox";
+                    colorBox.style.backgroundColor = color;
+                    if (index === 2) colorBox.classList.add("selected");
+
+                    colorBox.onclick = () => selectColor(color, colorBox);
+                    colorGrid.appendChild(colorBox);
+                });
             }
-        }
 
-        function redrawCanvas() {
-            Object.entries(gameData.pixels).forEach(([key, color]) => {
-                const [x, y] = key.split(',').map(Number);
-                drawPixel(x, y, color);
-            });
-        }
+            function selectColor(color, element) {
+                selectedColor = color;
+                document
+                    .querySelectorAll(".colorBox")
+                    .forEach((box) => box.classList.remove("selected"));
+                element.classList.add("selected");
+            }
 
-        function startTimer() {
-            setInterval(() => {
-                if (!canPlacePixel) {
-                    const elapsed = Math.floor((Date.now() - lastPixelTime) / 1000);
-                    const remaining = Math.max(0, 3 - elapsed);
-                    
-                    document.getElementById('timeLeft').textContent = remaining;
-                    
-                    if (remaining === 0) {
-                        canPlacePixel = true;
+            function initializeGame() {
+                createPixelGrid();
+                pixelCanvas.addEventListener("click", handleCanvasClick);
+                pixelCanvas.addEventListener("mousemove", showCoords);
+                document
+                    .getElementById("miniMapCanvas")
+                    .addEventListener("click", handleMiniMapClick);
+                startTimer();
+                redrawCanvas();
+                updateMiniMap();
+            }
+
+            function createPixelGrid() {
+                pixelCanvas.innerHTML = "";
+                for (let y = 0; y < gridHeight; y++) {
+                    for (let x = 0; x < gridWidth; x++) {
+                        const rect = document.createElementNS(
+                            "http://www.w3.org/2000/svg",
+                            "rect",
+                        );
+                        rect.setAttribute("x", x * pixelSize);
+                        rect.setAttribute("y", y * pixelSize);
+                        rect.setAttribute("width", pixelSize);
+                        rect.setAttribute("height", pixelSize);
+                        rect.setAttribute("class", "pixel-square");
+                        rect.setAttribute("data-x", x);
+                        rect.setAttribute("data-y", y);
+                        pixelCanvas.appendChild(rect);
                     }
+                }
+            }
+
+            function setupMouseDrag() {
+                canvasContainer.addEventListener("mousedown", (e) => {
+                    isDragging = true;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                    canvasContainer.style.cursor = "grabbing";
+                });
+
+                canvasContainer.addEventListener("mouseup", () => {
+                    isDragging = false;
+                    canvasContainer.style.cursor = "grab";
+                });
+
+                canvasContainer.addEventListener("mouseleave", () => {
+                    isDragging = false;
+                    canvasContainer.style.cursor = "grab";
+                });
+
+                canvasContainer.addEventListener("mousemove", (e) => {
+                    if (isDragging) {
+                        const deltaX = e.clientX - lastX;
+                        const deltaY = e.clientY - lastY;
+                        lastX = e.clientX;
+                        lastY = e.clientY;
+
+                        currentCanvasX += deltaX;
+                        currentCanvasY += deltaY;
+
+                        constrainCanvas();
+                        pixelCanvas.style.transform = `translate(${currentCanvasX}px, ${currentCanvasY}px)`;
+                        updateMiniMap();
+                    }
+                });
+            }
+
+            function handleCanvasClick(event) {
+                if (isDragging) return;
+
+                if (!canPlacePixel && !isAdmin) {
+                    showNotification("Henüz piksel koyamazsınız!");
+                    return;
+                }
+
+                const rect = event.target;
+                if (!rect.hasAttribute("data-x")) return;
+
+                const x = parseInt(rect.getAttribute("data-x"));
+                const y = parseInt(rect.getAttribute("data-y"));
+
+                placePixel(x, y);
+            }
+
+            function placePixel(x, y) {
+                const pixelKey = `${x},${y}`;
+                gameData.pixels[pixelKey] = selectedColor;
+                drawPixel(x, y, selectedColor);
+
+                if (!isAdmin) {
+                    canPlacePixel = false;
+                    lastPixelTime = Date.now();
+                }
+
+                socket.emit("place-pixel", {
+                    x,
+                    y,
+                    color: selectedColor,
+                    username,
+                    roomCode,
+                });
+            }
+
+            function drawPixel(x, y, color) {
+                const rect = document.querySelector(
+                    `[data-x="${x}"][data-y="${y}"]`,
+                );
+                if (rect) {
+                    rect.style.fill = color;
+                }
+            }
+
+            function redrawCanvas() {
+                Object.entries(gameData.pixels).forEach(([key, color]) => {
+                    const [x, y] = key.split(",").map(Number);
+                    drawPixel(x, y, color);
+                });
+            }
+
+            function updateMiniMap() {
+                const canvas = document.getElementById("miniMapCanvas");
+                const ctx = canvas.getContext("2d");
+
+                // Temizle
+                ctx.clearRect(0, 0, 96, 96);
+                ctx.fillStyle = "#f0f0f0";
+                ctx.fillRect(0, 0, 96, 96);
+
+                // Pikselleri çiz (mini)
+                Object.entries(gameData.pixels).forEach(([key, color]) => {
+                    const [x, y] = key.split(",").map(Number);
+                    const miniX = Math.floor((x / gridWidth) * 96);
+                    const miniY = Math.floor((y / gridHeight) * 96);
+                    ctx.fillStyle = color;
+                    ctx.fillRect(miniX, miniY, 1, 1);
+                });
+
+                // Görüntü alanını göster
+                const viewX =
+                    (Math.abs(currentCanvasX) / (gridWidth * pixelSize)) * 96;
+                const viewY =
+                    (Math.abs(currentCanvasY) / (gridHeight * pixelSize)) * 96;
+                const viewW =
+                    (window.innerWidth / (gridWidth * pixelSize)) * 96;
+                const viewH =
+                    (window.innerHeight / (gridHeight * pixelSize)) * 96;
+
+                ctx.strokeStyle = "#ff0000";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(viewX, viewY, viewW, viewH);
+            }
+
+            function handleMiniMapClick(e) {
+                const canvas = document.getElementById("miniMapCanvas");
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const targetX = (x / 96) * gridWidth;
+                const targetY = (y / 96) * gridHeight;
+
+                teleportTo(Math.floor(targetX), Math.floor(targetY));
+            }
+
+
+
+            function startTimer() {
+                setInterval(() => {
+                    const pixelCooldown = 2; // 2 saniye
+                    if (!canPlacePixel && !isAdmin) {
+                        const elapsed = Math.floor(
+                            (Date.now() - lastPixelTime) / 1000,
+                        );
+                        const remaining = Math.max(0, pixelCooldown - elapsed);
+                        document.getElementById("timeLeft").textContent =
+                            remaining;
+                        if (remaining === 0) {
+                            canPlacePixel = true;
+                        }
+                    } else {
+                        document.getElementById("timeLeft").textContent = isAdmin ? "ADMİN" : "0";
+                    }
+
+                    const chatCooldown = 6;
+                    if (!canSendMessage) {
+                        const elapsed = Math.floor(
+                            (Date.now() - lastMessageTime) / 1000,
+                        );
+                        const remaining = Math.max(0, chatCooldown - elapsed);
+                        document.getElementById("sendButton").textContent =
+                            remaining > 0 ? `${remaining}s` : "Gönder";
+                        document.getElementById("sendButton").disabled =
+                            remaining > 0;
+                        if (remaining === 0) {
+                            canSendMessage = true;
+                        }
+                    } else {
+                        document.getElementById("sendButton").textContent =
+                            "Gönder";
+                        document.getElementById("sendButton").disabled = false;
+                    }
+                }, 100);
+            }
+
+            function sendMessage() {
+                const input = document.getElementById("messageInput");
+                let message = input.value.trim();
+
+                if (message.length === 0) return;
+                if (!canSendMessage) {
+                    showNotification(
+                        "Chat mesajı göndermek için 6 saniye beklemelisiniz.",
+                    );
+                    return;
+                }
+
+                canSendMessage = false;
+                lastMessageTime = Date.now();
+
+                socket.emit("send-message", {
+                    username,
+                    message,
+                    roomCode,
+                });
+
+                input.value = "";
+            }
+
+            function sendCoords() {
+                if (!canSendMessage) {
+                    showNotification(
+                        "Chat mesajı göndermek için 6 saniye beklemelisiniz.",
+                    );
+                    return;
+                }
+
+                canSendMessage = false;
+                lastMessageTime = Date.now();
+
+                const message = `${currentMouseX},${currentMouseY}`;
+                socket.emit("send-message", {
+                    username,
+                    message,
+                    roomCode,
+                });
+            }
+
+            function addChatMessage(user, message) {
+                const chatMessages = document.getElementById("chatMessages");
+                const messageDiv = document.createElement("div");
+                messageDiv.className = "chatMessage";
+
+                const coordsMatch = message.match(/^(\d+),(\d+)$/);
+                if (coordsMatch) {
+                    const x = coordsMatch[1];
+                    const y = coordsMatch[2];
+                    messageDiv.innerHTML = `<span class="username">${user}:</span> <span class="coordinates" onclick="teleportTo(${x}, ${y})">(${x}, ${y})</span>`;
                 } else {
-                    document.getElementById('timeLeft').textContent = '0';
+                    messageDiv.innerHTML = `<span class="username">${user}:</span> <span class="message">${message}</span>`;
                 }
-            }, 100);
-        }
 
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            
-            if (message.length === 0) return;
-            
-            if (isRealMultiplayer && socket) {
-                socket.emit('send-message', { username, message });
-            } else {
-                addChatMessage(username, message);
-                gameData.messages.push({ username, message });
-                saveToLocalStorage();
-            }
-            
-            input.value = '';
-        }
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        function addChatMessage(user, message) {
-            const chatMessages = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'chatMessage';
-            
-            messageDiv.innerHTML = `<span class="username">${user}:</span> <span class="message">${message}</span>`;
-            
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-            
-            // Çok fazla mesaj varsa eskilerini sil
-            while (chatMessages.children.length > 100) {
-                chatMessages.removeChild(chatMessages.firstChild);
-            }
-        }
-
-        function updateOnlineCount() {
-            document.getElementById('userCount').textContent = gameData.users.size;
-        }
-
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
+                while (chatMessages.children.length > 100) {
+                    chatMessages.removeChild(chatMessages.firstChild);
                 }
-            }, 2000);
-        }
-
-        // Sayfa kapanırken veriyi kaydet
-        window.addEventListener('beforeunload', () => {
-            if (isRealMultiplayer && socket) {
-                socket.emit('leave-game', { username });
-            } else {
-                gameData.users.delete(username);
-                saveToLocalStorage();
             }
-        });
-    </script>
-</body>
+
+            function updateOnlineCount() {
+                document.getElementById("userCount").textContent =
+                    gameData.users.size;
+            }
+
+            function updateAdminUI() {
+                if (isAdmin) {
+                    // Admin crown emoji ekle
+                    document.getElementById("topluyo-text").innerHTML = "👑 Topluyo Pikselliyo (ADMİN)";
+
+                    // Admin talimatları ekle
+                    const controlsDiv = document.getElementById("controls");
+                    if (!controlsDiv.innerHTML.includes("Admin Komutları")) {
+                        controlsDiv.innerHTML += "<br><br><strong>Admin Komutları:</strong><br>/ban &lt;kullanıcı&gt; - Ban<br>/clear - Tuval temizle<br>/help - Yardım";
+                    }
+                }
+            }
+
+            function showNotification(message) {
+                const notification = document.createElement("div");
+                notification.className = "notification";
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 3000);
+            }
+
+            function showBanScreen(message, admin, bannedAt) {
+                document.getElementById("banScreen").style.display = "flex";
+                document.getElementById("gameArea").style.display = "none";
+                document.getElementById("banReason").innerHTML = `
+                    <strong>${message}</strong><br><br>
+                    Admin: ${admin}<br>
+                    Tarih: ${bannedAt}<br><br>
+                    3 saniye sonra sayfa yenilenecek...
+                `;
+            }
+
+            function showCoords(event) {
+                const rect = pixelCanvas.getBoundingClientRect();
+                const x = Math.floor((event.clientX - rect.left) / pixelSize);
+                const y = Math.floor((event.clientY - rect.top) / pixelSize);
+                currentMouseX = Math.max(0, Math.min(gridWidth - 1, x));
+                currentMouseY = Math.max(0, Math.min(gridHeight - 1, y));
+                document.getElementById("currentCoords").textContent =
+                    `(${currentMouseX}, ${currentMouseY})`;
+            }
+
+            function teleportTo(x, y) {
+                const newX = -x * pixelSize + window.innerWidth / 2;
+                const newY = -y * pixelSize + window.innerHeight / 2;
+
+                const maxX = gridWidth * pixelSize - window.innerWidth;
+                const maxY = gridHeight * pixelSize - window.innerHeight;
+
+                currentCanvasX = Math.min(0, Math.max(-maxX, newX));
+                currentCanvasY = Math.min(0, Math.max(-maxY, newY));
+
+                pixelCanvas.style.transition = "transform 0.5s ease-in-out";
+                pixelCanvas.style.transform = `translate(${currentCanvasX}px, ${currentCanvasY}px)`;
+
+                setTimeout(() => {
+                    pixelCanvas.style.transition = "none";
+                    updateMiniMap();
+                }, 500);
+
+                showNotification(`(${x}, ${y}) koordinatlarına ışınlandınız!`);
+            }
+
+            // Zoom özelliği
+            canvasContainer.addEventListener("wheel", function (e) {
+                e.preventDefault();
+                const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                const currentScale = getCurrentScale();
+                const newScale = Math.min(
+                    Math.max(currentScale * zoomFactor, 0.5),
+                    3,
+                );
+
+                if (newScale !== currentScale) {
+                    const rect = pixelCanvas.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+
+                    pixelCanvas.style.transformOrigin = `${mouseX}px ${mouseY}px`;
+                    pixelCanvas.style.transform = `translate(${currentCanvasX}px, ${currentCanvasY}px) scale(${newScale})`;
+                }
+            });
+
+            function getCurrentScale() {
+                const transform = pixelCanvas.style.transform;
+                const scaleMatch = transform.match(/scale\(([^)]+)\)/);
+                return scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+            }
+
+            // Renk kısayolları (1-9 tuşları)
+            document.addEventListener("keydown", function (e) {
+                if (document.activeElement.tagName === "INPUT") return;
+
+                const num = parseInt(e.key);
+                if (num >= 1 && num <= 9 && colors[num - 1]) {
+                    const colorBox =
+                        document.querySelectorAll(".colorBox")[num - 1];
+                    if (colorBox) {
+                        selectColor(colors[num - 1], colorBox);
+                        showNotification(`Renk ${num} seçildi!`);
+                    }
+                }
+            });
+
+            window.addEventListener("beforeunload", () => {
+                if (socket) {
+                    socket.emit("leave-room", { username, roomCode });
+                }
+            });
+
+            // Performans optimizasyonu için piksel sayısını sınırla
+            function optimizeCanvas() {
+                const visiblePixels = document.querySelectorAll(
+                    '.pixel-square[style*="fill"]',
+                );
+                if (visiblePixels.length > 10000) {
+                    // Görünmez pikselleri temizle
+                    visiblePixels.forEach((pixel, index) => {
+                        if (index > 8000) {
+                            pixel.style.fill = "white";
+                        }
+                    });
+                }
+            }
+
+            // Her 30 saniyede bir optimizasyon çalıştır
+            setInterval(optimizeCanvas, 30000);
+        </script>
+    </body>
 </html>
